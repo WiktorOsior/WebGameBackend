@@ -1,0 +1,45 @@
+package com.webgame.backend.Services;
+
+import com.webgame.backend.Dtos.RegisterDto;
+import com.webgame.backend.Repositories.RegisterInterface;
+import com.webgame.backend.databases.User;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+
+@Service
+public class RegisterService implements UserDetailsService {
+
+    @Autowired
+    private RegisterInterface registerInterface;
+
+    public String create(RegisterDto dto) {
+        User info = User.builder()
+                .username(dto.username())
+                .password(new BCryptPasswordEncoder().encode(dto.password()))
+                .authorities("USER")
+                .points(100)
+                .build();
+        registerInterface.save(info);
+        return "Create Successfully";
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = registerInterface.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with username: " + username);
+        }
+        return new org.springframework.security.core.userdetails.User(
+                user.getUsername(),
+                user.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority("USER"))
+        );
+    }
+}
