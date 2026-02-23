@@ -1,4 +1,4 @@
-package com.webgame.backend.databases;
+package horses.databases;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -33,7 +33,7 @@ public class User implements UserDetails {
 
     @Size(max = 100)
     @NotNull
-    @Column(name = "username", nullable = false, length = 100, unique = true)
+    @Column(name = "username", nullable = false, length = 100)
     private String username;
 
     @Size(max = 100)

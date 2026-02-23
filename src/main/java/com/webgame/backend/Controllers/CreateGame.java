@@ -1,15 +1,12 @@
 package com.webgame.backend.Controllers;
 
-import com.webgame.backend.configurations.JwtUtil;
 import com.webgame.backend.databases.Game;
 import com.webgame.backend.Services.GameService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 
 @RestController
 public class CreateGame {
@@ -21,30 +18,34 @@ public class CreateGame {
     }
 
     @GetMapping("/create")
-    public ResponseEntity<?> CreateGame(@RequestHeader("Authorization") String authorizationHeader, HttpServletRequest request) {
-        Authentication authentication = JwtUtil.authenticateUser(authorizationHeader, request);
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).body("User is not authenticated");
+    public ResponseEntity<?> CreateGame(Authentication authentication) {
+        String username = authentication.getName();
+
+        Integer existingGameId = gameService.getGameIdForUser(username);
+        if (existingGameId != null) {
+            return ResponseEntity.status(409).body("User is already in game " + existingGameId);
         }
 
         int gameId = gameService.addGame();
-        return JoinGame(authorizationHeader, gameId, request);
+        return JoinGame(authentication, gameId);
     }
 
     @GetMapping("/list")
     public ResponseEntity<?> getList() {
         List<Game> games = gameService.getGames();
-        return games.size() != 0 ? ResponseEntity.ok(games) : ResponseEntity.ok("There are no games");
+        return games.isEmpty() ? ResponseEntity.ok("There are no games") : ResponseEntity.ok(games);
     }
 
     @GetMapping("/join/{game_id}")
-    public ResponseEntity<?> JoinGame(@RequestHeader("Authorization") String authorizationHeader, @PathVariable int game_id, HttpServletRequest request) {
-        Authentication authentication = JwtUtil.authenticateUser(authorizationHeader, request);
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).body("User is not authenticated");
+    public ResponseEntity<?> JoinGame(Authentication authentication, @PathVariable int game_id) {
+        String username = authentication.getName();
+
+        Integer existingGameId = gameService.getGameIdForUser(username);
+
+        if (existingGameId != null && existingGameId != game_id) {
+            return ResponseEntity.status(409).body("User is already in game " + existingGameId);
         }
 
-        String username = authentication.getName();
         boolean joined = gameService.joinGame(username, game_id);
         if (joined) {
             return ResponseEntity.status(200).body("Game found and user joined");
